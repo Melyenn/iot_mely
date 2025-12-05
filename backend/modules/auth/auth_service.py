@@ -1,4 +1,3 @@
-import datetime
 from datetime import datetime, timedelta, timezone
 from os import environ as env
 
