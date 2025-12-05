@@ -13,6 +13,7 @@
       buildInputs = [
         (pkgs.python312.withPackages (python-pkgs: [
           # User libraries
+          python-pkgs.watchfiles
           python-pkgs.numpy
           python-pkgs.pydantic
           python-pkgs.email-validator

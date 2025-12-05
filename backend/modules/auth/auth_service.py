@@ -5,8 +5,11 @@ from datetime import datetime, timedelta, timezone
 
 from os import environ as env
 
-from app.models import User
+from backend.models import User
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+
+from backend.state import AppState
 
 secret_key = env.get("JWT_SECRET_KEY", default="secret-key")
 token_expire_min = int(env.get("JWT_EXPIRE_MIN", default="30"))
@@ -32,17 +35,16 @@ def create_access_token(data: dict, expires_delta: timedelta):
   return encoded_jwt
 
 
-def verify_token(token: str, credentials_exception):
+def verify_token(token: str) -> str | None:
   """Verify and decode a JWT token"""
   try:
     payload = jwt.decode(token, secret_key, algorithms=["HS256"])
     username = payload.get("sub")
     if username is None:
-      raise credentials_exception
-    token_data = {"username": username}
-    return token_data
+      return None
+    return username
   except JWTError:
-    raise credentials_exception 
+    return None
 
 
 def authenticate(user: User) -> Response:
@@ -67,3 +69,26 @@ def authenticate(user: User) -> Response:
   return response
 
 
+def get_user(request: Request) -> User | None:
+  state = AppState.get(request)
+  with state.get_db() as db:
+    token = request.cookies.get('access_token')
+
+    if token is None:
+      return None
+
+    username = verify_token(token)
+    if username is None:
+      return None
+    user = db.query(User).filter(User.email == username).first()
+
+    if user is not None and bool(user.is_active):
+      return user
+
+  return None
+
+
+def logout() -> Response:
+  response = Response("success", status_code=200)
+  response.delete_cookie(key="access_token")
+  return response

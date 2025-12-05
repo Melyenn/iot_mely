@@ -1,8 +1,9 @@
+import subprocess
 from collections.abc import Coroutine
 from contextlib import asynccontextmanager
 from os import environ as env
 from typing import Any, Callable
-from app.state import AppState
+from backend.state import AppState
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
@@ -11,7 +12,7 @@ from starlette.staticfiles import StaticFiles
 import aiofiles
 import uvicorn
 
-from app.modules.auth import auth_controller
+from backend.modules.auth import auth_controller
 
 def homepage_handler(dev: bool) -> Callable[[Request], Coroutine[Any, Any, Response]]:
   if dev:
@@ -39,6 +40,8 @@ host = env.get('HOST', default='0.0.0.0')
 
 @asynccontextmanager
 async def lifespan(app: Starlette):
+  if dev:
+    subprocess.run(["npm", "run", "build"])
   AppState.init(app)
   yield
 
@@ -50,6 +53,13 @@ app = Starlette(routes=[
 
 if __name__ == "__main__":
   if dev:
-    uvicorn.run('main:app', host='127.0.0.1', port=port, reload=True)
+    uvicorn.run(
+      app='backend.main:app',
+      host='127.0.0.1',
+      port=port,
+      reload=True,
+      reload_includes=["*.html", "*.ts"],
+      reload_dirs=["frontend", "backend"]
+    )
   else:
     uvicorn.run(app, host=host, port=port) 

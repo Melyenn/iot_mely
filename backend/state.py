@@ -9,7 +9,7 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from os import environ as env
 
-from app.models import Base
+from backend.models import Base
 
 @dataclass
 class AppState:
