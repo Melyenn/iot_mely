@@ -7,7 +7,8 @@ from os import environ as env
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
-from starlette.requests import Request
+from starlette.requests import HTTPConnection
+from starlette.websockets import WebSocket
 
 from backend.models import Base
 
@@ -32,7 +33,7 @@ class AppState:
 	db_engine: Engine
 	session: sessionmaker[Session]
 
-	ws_connections: dict[str, object]
+	ws_connections: dict[str, WebSocket]
 
 	sensor_task: asyncio.Task[None] | None = None
 
@@ -74,5 +75,5 @@ class AppState:
 			db.close()
 
 	@staticmethod
-	def get(request: Request) -> AppState:
+	def get(request: HTTPConnection) -> AppState:
 		return request.app.state.data
