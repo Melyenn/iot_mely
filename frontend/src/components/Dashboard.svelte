@@ -21,6 +21,11 @@
 		gas: number
 	}
 
+	type DashboardResponse = {
+		username: string
+		sensor_data?: SensorDataRaw[]
+	}
+
 	type PollStatus = {
 		is_polling: boolean
 	}
@@ -35,7 +40,7 @@
 	let ws: WebSocket | null = $state(null)
 	let wsConnected = $state(false)
 
-	function connectWebSocket(token: string) {
+	function connectWebSocket() {
 		// Close existing connection if any
 		if (ws) {
 			ws.close()
@@ -43,7 +48,7 @@
 
 		// Determine WebSocket URL
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-		const wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`
+		const wsUrl = `${protocol}//${window.location.host}/ws`
 
 		const websocket = new WebSocket(wsUrl)
 
@@ -81,32 +86,28 @@
 
 	async function fetchDashboardData() {
 		try {
-			const response = await apiGet<{
-				username: string
-				sensor_data?: SensorDataRaw[]
-				ws_token?: string
-			}>('/dashboard/', {
+			const response = await apiGet<DashboardResponse>('/dashboard/', {
 				handleLogout: onLogout,
 			})
 
 			// Parse timestamps to Date objects
-			for (const dataPoint of response.sensor_data) {
-				sensorData.push({
-					...dataPoint,
-					timestamp: new Date(dataPoint.timestamp),
-				})
+			if (response.sensor_data) {
+				for (const dataPoint of response.sensor_data) {
+					sensorData.push({
+						...dataPoint,
+						timestamp: new Date(dataPoint.timestamp),
+					})
+				}
 			}
 			fetchError = null
 
 			// Log sensor data to console
-			if (sensorData) {
+			if (sensorData.length > 0) {
 				console.log('Sensor data from last 3 days:', sensorData)
 			}
 
-			// Connect WebSocket with token
-			if (response.ws_token) {
-				connectWebSocket(response.ws_token)
-			}
+			// Connect WebSocket (uses cookie authentication)
+			connectWebSocket()
 		} catch (err) {
 			console.error('Failed to fetch dashboard data:', err)
 			fetchError = err instanceof Error ? err.message : 'Failed to load dashboard data'
@@ -166,7 +167,7 @@
 	})
 
 	$effect(() => {
-		console.log("updated sensor data:", Array.from(sensorData))
+		console.log('updated sensor data:', Array.from(sensorData))
 	})
 </script>
 
@@ -226,8 +227,7 @@
 			</div>
 			{#if sensorData.length > 0}
 				<p class="text-sm text-gray-500 mt-2">
-					{sensorData.length} sensor readings (real-time updates enabled, check console
-					for details)
+					{sensorData.length} sensor readings (real-time updates enabled, check console for details)
 				</p>
 			{/if}
 		</div>

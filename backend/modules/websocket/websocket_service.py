@@ -1,44 +1,40 @@
-import secrets
-from datetime import datetime, timedelta, timezone
-from os import environ as env
+import asyncio
+import json
+from typing import TypedDict
 
-from jose import JWTError, jwt
-
-secret_key = env.get("JWT_SECRET_KEY", default="secret-key")
-ws_token_expire_min = int(env.get("WS_TOKEN_EXPIRE_MIN", default="60"))
+from backend.state import AppState
 
 
-def generate_ws_token() -> tuple[str, str]:
+class SensorDataDict(TypedDict):
+	id: int
+	timestamp: str
+	temperature: float
+	gas: float
+
+
+async def broadcast_sensor_data(state: AppState, data: SensorDataDict) -> None:
 	"""
-	Generate a WebSocket token with a random hex ID.
-
-	Returns:
-		tuple[str, str]: (token, hex_id)
+	Broadcast sensor data to all connected WebSocket clients.
+	Removes closed connections from the set.
 	"""
-	hex_id = secrets.token_hex(16)
-	expire = datetime.now(timezone.utc) + timedelta(minutes=ws_token_expire_min)
+	if not state.ws_connections:
+		return
 
-	to_encode = {"ws_id": hex_id, "exp": expire}
+	message = json.dumps(data)
 
-	token = jwt.encode(to_encode, secret_key, algorithm="HS256")
-	return token, hex_id
+	# Gather all send operations
+	results = await asyncio.gather(
+		*(connection.send_text(message) for connection in state.ws_connections),
+		return_exceptions=True,
+	)
 
+	# Remove connections that failed
+	closed_connections = []
+	for connection, result in zip(state.ws_connections, results):
+		if isinstance(result, Exception):
+			print(f"Failed to send to WebSocket: {result}")
+			closed_connections.append(connection)
 
-def verify_ws_token(token: str) -> str | None:
-	"""
-	Verify a WebSocket token and return the hex ID.
-
-	Args:
-		token: The JWT token to verify
-
-	Returns:
-		The hex ID if valid, None otherwise
-	"""
-	try:
-		payload = jwt.decode(token, secret_key, algorithms=["HS256"])
-		hex_id = payload.get("ws_id")
-		if hex_id is None:
-			return None
-		return hex_id
-	except JWTError:
-		return None
+	# Remove closed connections
+	for connection in closed_connections:
+		state.ws_connections.discard(connection)

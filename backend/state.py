@@ -31,7 +31,7 @@ class AppState:
 	db_engine: Engine
 	session: sessionmaker[Session]
 
-	ws_connections: dict[str, WebSocket]
+	ws_connections: set[WebSocket]
 
 	sensor_task: asyncio.Task[None] | None = None
 
@@ -51,7 +51,7 @@ class AppState:
 			session=sessionmaker(
 				autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
 			),
-			ws_connections=dict(),
+			ws_connections=set(),
 		)
 
 		app.state.data = state
@@ -61,8 +61,13 @@ class AppState:
 		if self.sensor_task is not None:
 			self.sensor_task.cancel()
 
-		for connection in self.ws_connections.values():
-			connection.close(code=1001, reason="Closing server")
+		if self.ws_connections:
+			await asyncio.gather(
+				*(
+					connection.close(code=1001, reason="Closing server")
+					for connection in self.ws_connections
+				)
+			)
 
 		self.db_engine.dispose()
 

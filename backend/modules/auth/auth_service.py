@@ -3,7 +3,7 @@ from os import environ as env
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from starlette.requests import Request
+from starlette.requests import HTTPConnection
 from starlette.responses import JSONResponse, Response
 
 from backend.models import User
@@ -68,7 +68,7 @@ def authenticate(user: User) -> Response:
 	return response
 
 
-def get_user(request: Request) -> User | None:
+def get_user(request: HTTPConnection) -> User | None:
 	state = AppState.get(request)
 	with state.get_db() as db:
 		token = request.cookies.get("access_token")

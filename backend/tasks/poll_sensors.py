@@ -1,18 +1,10 @@
 import asyncio
-import json
 import random
 from datetime import datetime
-from typing import TypedDict
 
 from backend.models import SensorData
+from backend.modules.websocket.websocket_service import broadcast_sensor_data
 from backend.state import AppState
-
-
-class SensorDataDict(TypedDict):
-	id: int
-	timestamp: str
-	temperature: float
-	gas: float
 
 
 async def fetch_sensor_data() -> tuple[float, float]:
@@ -34,26 +26,6 @@ async def fetch_sensor_data() -> tuple[float, float]:
 	return temperature, gas
 
 
-async def broadcast_sensor_data(state: AppState, data: SensorDataDict) -> None:
-	"""
-	Broadcast sensor data to all connected WebSocket clients.
-	Removes closed connections from the dictionary.
-	"""
-	closed_connections = []
-	message = json.dumps(data)
-
-	for hex_id, websocket in state.ws_connections.items():
-		try:
-			await websocket.send_text(message)
-		except Exception as e:
-			print(f"Failed to send to {hex_id}: {e}")
-			closed_connections.append(hex_id)
-
-	# Remove closed connections
-	for hex_id in closed_connections:
-		del state.ws_connections[hex_id]
-
-
 async def poll_sensors(state: AppState) -> None:
 	"""
 	Poll sensors and store the data in the database.
@@ -67,13 +39,13 @@ async def poll_sensors(state: AppState) -> None:
 		db.add(sensor_data)
 		db.commit()
 
-		# Get the ID after commit
-		data_dict: SensorDataDict = {
-			"id": sensor_data.id,
+	# Broadcast to WebSocket clients
+	await broadcast_sensor_data(
+		state,
+		{
+			"id": int(sensor_data.id),
 			"timestamp": timestamp.isoformat(),
 			"temperature": temperature,
 			"gas": gas,
-		}
-
-	# Broadcast to WebSocket clients
-	await broadcast_sensor_data(state, data_dict)
+		},
+	)
