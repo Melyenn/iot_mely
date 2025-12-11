@@ -23,7 +23,7 @@ async def handle_dashboard(request: Request) -> Response:
 				{
 					"id": datapoint.id,
 					"timestamp": datapoint.timestamp.isoformat(),
-					"temparature": datapoint.temperature,
+					"temperature": datapoint.temperature,
 					"gas": datapoint.gas,
 				}
 				for datapoint in sensor_data
