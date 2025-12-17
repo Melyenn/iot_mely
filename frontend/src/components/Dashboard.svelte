@@ -41,8 +41,15 @@
 	let ws: WebSocket | null = $state(null)
 	let wsConnected = $state(false)
 
+	type ToolCall = {
+		name: string
+		arguments: Record<string, unknown>
+		output: string
+	}
+
 	type ChatResponse = {
 		messages: ChatMessage[]
+		tool_calls: ToolCall[]
 	}
 
 	// Chat callback - calls the backend API
@@ -52,6 +59,17 @@
 			{ messages: history },
 			{ handleLogout: onLogout },
 		)
+
+		// Log tool calls to console
+		if (response.tool_calls.length > 0) {
+			console.group('Tool Calls')
+			for (const toolCall of response.tool_calls) {
+				console.log(`${toolCall.name}(`, toolCall.arguments, ')')
+				console.log('Output:', toolCall.output)
+			}
+			console.groupEnd()
+		}
+
 		return response.messages
 	}
 

@@ -17,6 +17,14 @@ class ChatMessage(BaseModel):
 		return v
 
 
+class ToolCall(BaseModel):
+	"""A tool call with its output."""
+
+	name: str
+	arguments: dict[str, object]
+	output: str
+
+
 class ChatRequest(BaseModel):
 	"""Chat request payload."""
 
@@ -34,4 +42,4 @@ class ChatResponse(BaseModel):
 	"""Chat response payload."""
 
 	messages: list[ChatMessage]
-
+	tool_calls: list[ToolCall]

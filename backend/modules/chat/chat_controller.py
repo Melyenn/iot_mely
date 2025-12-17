@@ -27,9 +27,12 @@ async def handle_chat(request: Request) -> Response:
 
 		state = AppState.get(request)
 		messages_dict = [msg.model_dump() for msg in chat_request.messages]
-		new_messages = chat(state, messages_dict)
+		result = chat(state, messages_dict)
 
-		response = ChatResponse(messages=new_messages)
+		response = ChatResponse(
+			messages=result.messages,
+			tool_calls=result.tool_calls,
+		)
 		return JSONResponse(response.model_dump())
 
 	except ValidationError as e:

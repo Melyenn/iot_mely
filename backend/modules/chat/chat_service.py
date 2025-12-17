@@ -179,16 +179,24 @@ def handle_tool_call(
 	return tool.handler(state, arguments)
 
 
-def chat(state: AppState, messages: list[dict[str, str]]) -> list[dict[str, str]]:
+@dataclass
+class ChatResult:
+	"""Result of a chat interaction."""
+
+	messages: list[dict[str, str]]
+	tool_calls: list[dict[str, object]]
+
+
+def chat(state: AppState, messages: list[dict[str, str]]) -> ChatResult:
 	"""
-	Process chat messages and return new assistant messages.
+	Process chat messages and return new assistant messages with tool call info.
 
 	Args:
 		state: Application state with OpenAI client and database access
 		messages: List of messages in OpenAI format [{role, content}, ...]
 
 	Returns:
-		List of new messages to append to the conversation
+		ChatResult with new messages and tool calls
 	"""
 	client = state.openai_client
 
@@ -199,6 +207,7 @@ def chat(state: AppState, messages: list[dict[str, str]]) -> list[dict[str, str]
 	]
 
 	new_messages: list[dict[str, str]] = []
+	tool_calls: list[dict[str, object]] = []
 	max_iterations = 20
 
 	for _ in range(max_iterations):
@@ -217,6 +226,15 @@ def chat(state: AppState, messages: list[dict[str, str]]) -> list[dict[str, str]
 				# Parse and execute tool call
 				arguments = json.loads(output.arguments)
 				result = handle_tool_call(state, output.name, arguments)
+
+				# Track tool call for frontend
+				tool_calls.append(
+					{
+						"name": output.name,
+						"arguments": arguments,
+						"output": result,
+					}
+				)
 
 				# Add tool call and result to inputs for next iteration
 				inputs.append(output)
@@ -247,4 +265,4 @@ def chat(state: AppState, messages: list[dict[str, str]]) -> list[dict[str, str]
 		if not has_tool_calls:
 			break
 
-	return new_messages
+	return ChatResult(messages=new_messages, tool_calls=tool_calls)
