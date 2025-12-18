@@ -1,0 +1,13 @@
+numpy
+pydantic
+email-validator
+python-jose
+passlib
+argon2-cffi
+starlette
+websockets
+uvicorn
+aiofiles
+sqlalchemy
+
+ruff
