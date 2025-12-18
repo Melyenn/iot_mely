@@ -3,6 +3,7 @@
 	import { apiPost, apiGet } from '../utils/api'
 	import LineChart from './LineChart.svelte'
 	import Scatterplot from './ScatterPlot.svelte'
+	import Chat, { type ChatMessage } from './Chat.svelte'
 
 	type Props = {
 		username: string
@@ -85,6 +86,37 @@
 	}
 
 	let led: StateLed = $state('#22c55e')
+	type ToolCall = {
+		name: string
+		arguments: Record<string, unknown>
+		output: string
+	}
+
+	type ChatResponse = {
+		messages: ChatMessage[]
+		tool_calls: ToolCall[]
+	}
+
+	// Chat callback - calls the backend API
+	async function handleChatMessage(history: ChatMessage[]): Promise<ChatMessage[]> {
+		const response = await apiPost<ChatResponse>(
+			'/chat/',
+			{ messages: history },
+			{ handleLogout: onLogout },
+		)
+
+		// Log tool calls to console
+		if (response.tool_calls.length > 0) {
+			console.group('Tool Calls')
+			for (const toolCall of response.tool_calls) {
+				console.log(`${toolCall.name}(`, toolCall.arguments, ')')
+				console.log('Output:', toolCall.output)
+			}
+			console.groupEnd()
+		}
+
+		return response.messages
+	}
 
 	function connectWebSocket() {
 		// Close existing connection if any
@@ -280,24 +312,24 @@
 	}
 </script>
 
-<div class="w-full max-w-6xl mx-auto p-6">
-	<div class="bg-white rounded-lg shadow-md p-6">
-		<div class="flex items-center justify-between mb-6">
-			<div>
-				<h1 class="text-3xl font-bold tracking-tight text-gray-900">FireGuard</h1>
-				<p class="text-gray-500 mt-1">Welcome, {username}</p>
 
+<div class="flex gap-6 w-full max-h-screen justify-center">
+	<!-- Main dashboard content -->
+	<div class="w-full max-w-5xl p-4">
+		<div class="bg-white h-full p-6">
+			<div class="flex items-center justify-between mb-6">
+				<div>
+					<h1 class="text-3xl font-bold tracking-tight text-gray-900">FireGuard</h1>
+				  <p class="text-gray-500 mt-1">Welcome, {username}</p>
+				</div>
+				<button
+					onclick={handleLogout}
+					disabled={loading}
+					class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+				>
+					{loading ? 'Logging out...' : 'Logout'}
+				</button>
 			</div>
-			<button
-				onclick={handleLogout}
-				disabled={loading}
-				class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-			>
-				{loading ? 'Logging out...' : 'Logout'}
-			</button>
-		</div>
-
-		<div>
 			{#if fetchError}
 				<div>
 					<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -604,4 +636,7 @@
 		</div>
 
 	</div>
+
+	<!-- Chat sidebar -->
+	<Chat onSendMessage={handleChatMessage} />
 </div>

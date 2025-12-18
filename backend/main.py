@@ -13,6 +13,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 from backend.modules.auth import auth_controller
+from backend.modules.chat import chat_controller
 from backend.modules.dashboard import dashboard_controller
 from backend.modules.websocket import websocket_controller
 from backend.state import AppState
@@ -76,6 +77,7 @@ app = Starlette(
 		Route("/", homepage_handler(dev), methods=["GET"]),
 		Mount("/assets", StaticFiles(directory="dist/assets"), name="assets"),
 		Mount("/auth", routes=auth_controller.routes),
+		Mount("/chat", routes=chat_controller.routes),
 		Mount("/dashboard", routes=dashboard_controller.routes),
 		*websocket_controller.routes,
 	],

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from os import environ as env
 
+from openai import OpenAI
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
@@ -103,6 +104,7 @@ def start_task(
 class AppState:
 	db_engine: Engine
 	session: sessionmaker[Session]
+	openai_client: OpenAI
 
 	ws_connections: set[WebSocket]
 
@@ -130,6 +132,7 @@ class AppState:
 			session=sessionmaker(
 				autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
 			),
+			openai_client=OpenAI(),
 			ws_connections=set(),
 			mqtt_client=init_mqtt(paho.Client(client_id="", protocol=paho.MQTTv5)),
 			main_loop=main_loop,
