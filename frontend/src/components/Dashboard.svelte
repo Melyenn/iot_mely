@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte'
 	import { apiPost, apiGet } from '../utils/api'
 	import LineChart from './LineChart.svelte'
-	import Scatterplot from './ScatterPlot.svelte'
 	import Chat, { type ChatMessage } from './Chat.svelte'
 
 	type Props = {
@@ -51,7 +50,7 @@
 	let onBuzzer: boolean = $state(false)
 	let onRelay: boolean = $state(false)
 
-	let activeTab: 'temp' | 'gas' | 'all' | 'scatterplot' = $state('all')
+	let activeTab: 'temp' | 'gas' | 'all' = $state('all')
 
 	const tempData = $derived(
 		sensorData
@@ -317,17 +316,66 @@
 	<div class="w-full max-w-6xl p-4">
 		<div class="bg-white h-full p-6 overflow-y-auto">
 			<div class="flex items-center justify-between mb-6">
-				<div>
-					<h1 class="text-3xl font-bold tracking-tight text-gray-900">FireGuard</h1>
-					<p class="text-gray-500 mt-1">Welcome, {username}</p>
-				</div>
-				<button
-					onclick={handleLogout}
-					disabled={loading}
-					class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-				>
-					{loading ? 'Logging out...' : 'Logout'}
-				</button>
+				<header class="flex items-center justify-between w-full">
+					<div class="flex items-center gap-4">
+						<div class="bg-[#FF4D00] rounded-2xl p-2.5 shadow-lg shadow-orange-100/50">
+							<svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+								<path
+									d="M12 2C12 2 12 5.79 12 7.19C12 8.59 12.79 10 14.19 10C15.59 10 17 8.59 17 7.19C17 5.79 17 2 17 2C17 2 21 6 21 11C21 16 17 20 12 20C7 20 3 16 3 11C3 6 7 2 12 2Z"
+								/>
+							</svg>
+						</div>
+						<div>
+							<h1 class="text-2xl font-extrabold tracking-tight text-gray-900">FireGuard</h1>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-6">
+						<div
+							class="flex items-center gap-2 rounded-full border px-4 py-1.5 {led === '#22c55e'
+								? 'border-green-100 bg-green-50 text-green-700'
+								: led === '#eab308'
+									? 'border-yellow-100 bg-yellow-50 text-yellow-700'
+									: 'border-red-100 bg-red-50 text-red-700'}"
+						>
+							<span
+								class="h-2.5 w-2.5 rounded-full animate-pulse {led === '#22c55e'
+									? 'bg-green-500'
+									: led === '#eab308'
+										? 'bg-yellow-500'
+										: 'bg-red-500'}"
+							></span>
+							<span class="text-sm font-bold">
+								{led === '#22c55e' ? 'Stable' : led === '#eab308' ? 'Warning' : 'Serious'}
+							</span>
+						</div>
+
+						<div class="flex items-center gap-4 text-gray-500">
+							<span class="text-sm font-bold">Welcome, {username}</span>
+							<button
+								onclick={handleLogout}
+								disabled={loading}
+								class="text-gray-400 transition-colors hover:text-red-500 disabled:opacity-50"
+								aria-label="Logout"
+							>
+								<svg
+									class="h-5 w-5"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+									/>
+								</svg>
+							</button>
+						</div>
+					</div>
+				</header>
 			</div>
 			{#if fetchError}
 				<div>
@@ -337,18 +385,36 @@
 				</div>
 			{:else}
 				<div>
-					<div class="border-t pt-6 mt-6">
-						<div class="flex items-center gap-2 mb-2">
+					<div class="border-t py-6 flex flex-row gap-2">
+						<div
+							class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-sm"
+						>
 							<div class="w-3 h-3 rounded-full {isPolling ? 'bg-green-500' : 'bg-gray-400'}"></div>
 							<p class="text-gray-600">
 								Polling: {isPolling ? 'Active' : 'Inactive'}
 							</p>
 						</div>
-						{#if sensorData.length > 0}
-							<p class="text-sm text-gray-500 mt-2">
-								{sensorData.length} sensor readings (real-time updates enabled, check console for details)
-							</p>
-						{/if}
+						<div
+							class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-sm"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+								/>
+							</svg>
+							Update: {sensorData.at(-1)?.timestamp.toLocaleTimeString('vi-VN') ??
+								new Date().toLocaleTimeString('vi-VN')}
+						</div>
+						<div
+							class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-sm"
+						>
+							<span class="w-2 h-2 rounded-full {wsConnected ? 'bg-blue-500' : 'bg-gray-400'}"
+							></span>
+							{wsConnected ? 'Live' : 'Offline'}
+						</div>
 					</div>
 
 					<!-- Main Content -->
@@ -579,7 +645,7 @@
 						</div>
 
 						<div class="w-full flex flex-col gap-4">
-							<h2 class="text-xl font-semibold">Data Sensor History (Latest 10 Entries)</h2>
+							<h2 class="text-xl font-semibold">Data Sensor History (Latest 20 Entries)</h2>
 							<!-- Tabs -->
 							<div class="flex gap-4 mb-4">
 								<button
@@ -606,27 +672,13 @@
 								>
 									Gas
 								</button>
-								<button
-									class="px-4 py-2 rounded-t-lg border-b-2"
-									class:border-blue-500={activeTab === 'scatterplot'}
-									class:border-gray-200={activeTab !== 'scatterplot'}
-									onclick={() => (activeTab = 'scatterplot')}
-								>
-									Scatter Plot
-								</button>
 							</div>
 							<div class="w-full mx-auto">
-								{#if activeTab !== 'scatterplot'}
-									<LineChart
-										data1={activeTab === 'gas' ? [] : tempData}
-										data2={activeTab === 'temp' ? [] : gasData}
-										time={timeData}
-									/>
-								{/if}
-
-								{#if activeTab === 'scatterplot'}
-									<Scatterplot data1={tempData} data2={gasData} time={timeData} />
-								{/if}
+								<LineChart
+									data1={activeTab === 'gas' ? [] : tempData}
+									data2={activeTab === 'temp' ? [] : gasData}
+									time={timeData}
+								/>
 							</div>
 						</div>
 					</div>
