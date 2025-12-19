@@ -42,7 +42,6 @@
 	let isPolling = $state(false)
 	let pollingLoading = $state(false)
 	let ws: WebSocket | null = $state(null)
-	let wsConnected = $state(false)
 
 	let temp = $derived(sensorData.at(-1)?.temperature ?? 20)
 	const maxTemp = 200
@@ -51,27 +50,6 @@
 
 	let onBuzzer: boolean = $state(false)
 	let onRelay: boolean = $state(false)
-
-	const tempData = $derived(
-		sensorData
-			.filter(item => item && item.temperature !== undefined)
-			.map(item => item.temperature)
-			.slice(-20),
-	)
-
-	const gasData = $derived(
-		sensorData
-			.filter(item => item && item.gas !== undefined)
-			.map(item => item.gas)
-			.slice(-20),
-	)
-
-	const timeData = $derived(
-		sensorData
-			.filter(item => item && item.gas !== undefined)
-			.map(item => item.timestamp.toLocaleTimeString('vi-VN'))
-			.slice(-20),
-	)
 
 	type StateLed = '#d43008' | '#22c55e' | '#eab308'
 
@@ -161,7 +139,7 @@
 
 		websocket.addEventListener('open', () => {
 			console.log('WebSocket connected')
-			wsConnected = true
+			ws = websocket
 		})
 
 		websocket.addEventListener('message', event => {
@@ -179,15 +157,13 @@
 
 		websocket.addEventListener('error', error => {
 			console.error('WebSocket error:', error)
-			wsConnected = false
+			ws = null
 		})
 
 		websocket.addEventListener('close', () => {
 			console.log('WebSocket disconnected')
-			wsConnected = false
+			ws = null
 		})
-
-		ws = websocket
 	}
 
 	async function fetchDashboardData() {
@@ -300,7 +276,6 @@
 	})
 
 	$effect(() => {
-		console.log('updated sensor data:', Array.from(sensorData))
 		led = getLedState(sensorData.at(-1)?.temperature || 0, sensorData.at(-1)?.gas || 0)
 		if (led_last === null || led_last !== led) {
 			console.log('12')
@@ -440,9 +415,8 @@
 						<div
 							class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-sm"
 						>
-							<span class="w-2 h-2 rounded-full {wsConnected ? 'bg-blue-500' : 'bg-gray-400'}"
-							></span>
-							{wsConnected ? 'Live' : 'Offline'}
+							<span class="w-2 h-2 rounded-full {ws ? 'bg-blue-500' : 'bg-gray-400'}"></span>
+							{ws ? 'Live' : 'Offline'}
 						</div>
 					</div>
 
@@ -671,7 +645,7 @@
 							</div>
 						</div>
 
-						<SensorHistory {tempData} {gasData} {timeData} />
+						<SensorHistory {sensorData} />
 					</div>
 				</div>
 			{/if}

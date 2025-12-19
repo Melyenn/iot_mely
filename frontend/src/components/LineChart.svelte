@@ -1,6 +1,6 @@
 <script lang="ts">
 	type Series = {
-		data: number[]
+		data: (number | null)[]
 		label?: string
 		color: string
 	}
@@ -27,8 +27,10 @@
 	} | null>(null)
 	let chartContainer: HTMLDivElement
 
-	// Compute domain from all series
-	const allData = $derived.by(() => series.flatMap(s => s.data).filter(Number.isFinite))
+	// Compute domain from all series (filter out nulls)
+	const allData = $derived.by(() =>
+		series.flatMap(s => s.data).filter((v): v is number => v !== null),
+	)
 
 	const yDomainMin = $derived(allData.length ? Math.max(0, Math.min(...allData) - 5) : 0)
 	const yDomainMax = $derived(allData.length ? Math.max(...allData) + 5 : 35)
@@ -45,20 +47,43 @@
 		return (index: number) => index * step + PADDINGX
 	})
 
-	// Convert array to SVG path
-	function toPath(arr: number[]): string {
-		return arr.map((v, i) => ` ${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(v)}`).join('')
+	// Convert array to SVG path, breaking at null values
+	function toPath(arr: (number | null)[]): string {
+		let path = ''
+		let needsMove = true
+
+		for (let i = 0; i < arr.length; i++) {
+			const v = arr[i]
+			if (v === null) {
+				needsMove = true
+				continue
+			}
+			const cmd = needsMove ? 'M' : 'L'
+			path += ` ${cmd} ${xScale(i)} ${yScale(v)}`
+			needsMove = false
+		}
+
+		return path
 	}
 
 	// Compute paths and points for each series
 	const seriesData = $derived.by(() =>
 		series
 			.filter(s => s.data.length > 0)
-			.map(s => ({
-				...s,
-				path: toPath(s.data),
-				points: s.data.map((v, i) => ({ x: xScale(i), y: yScale(v), v })),
-			})),
+			.map(s => {
+				const validPoints: { x: number; y: number; v: number; i: number }[] = []
+				for (let i = 0; i < s.data.length; i++) {
+					const v = s.data[i]
+					if (v !== null) {
+						validPoints.push({ x: xScale(i), y: yScale(v), v, i })
+					}
+				}
+				return {
+					...s,
+					path: toPath(s.data),
+					points: validPoints,
+				}
+			}),
 	)
 
 	// Y axis labels
