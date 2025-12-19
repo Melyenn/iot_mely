@@ -1,6 +1,6 @@
 <script lang="ts">
 	import LineChart from './LineChart.svelte'
-	import CholeskySolver, { type Matrix } from '../utils/ringe-regression'
+	import CholeskySolver, { type Matrix } from '../utils/ridge-regression'
 
 	type SensorData = {
 		id: number
@@ -114,9 +114,7 @@
 
 	const gasData = $derived(sensorData.map(item => item.gas).slice(-20))
 
-	const timeData = $derived(
-		sensorData.map(item => item.timestamp.toLocaleTimeString()).slice(-20),
-	)
+	const timeData = $derived(sensorData.map(item => item.timestamp.toLocaleTimeString()).slice(-20))
 
 	const avgTimeInterval = $derived.by(() => {
 		const timestamps = sensorData.slice(-10).map(item => item.timestamp.getTime())
