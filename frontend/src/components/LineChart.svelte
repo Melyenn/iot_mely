@@ -3,7 +3,8 @@
 
 	const WIDTH = 700
 	const HEIGHT = 300
-	const PADDING = 30
+	const PADDINGX = 50
+	const PADDINGY = 20
 
 	/* ------------------------------------
         Tính domain cho cả 2 series
@@ -14,15 +15,15 @@
 	const yDomainMax = $derived(allData.length ? Math.max(...allData) + 5 : 35)
 
 	const yScale = $derived.by(() => {
-		const range = HEIGHT - 2 * PADDING
+		const range = HEIGHT - 2 * PADDINGY
 		const denom = yDomainMax - yDomainMin
-		return value => range * (1 - (value - yDomainMin) / denom) + PADDING
+		return value => range * (1 - (value - yDomainMin) / denom) + PADDINGY
 	})
 
 	const xScale = $derived.by(() => {
 		const maxLen = Math.max(data1.length, data2.length)
-		const step = (WIDTH - 2 * PADDING) / Math.max(1, maxLen - 1)
-		return index => index * step + PADDING
+		const step = (WIDTH - 2 * PADDINGX) / Math.max(1, maxLen - 1)
+		return index => index * step + PADDINGX
 	})
 
 	/* ------------------------------------
@@ -54,14 +55,14 @@
 	<!-- Grid Y -->
 	{#each yLabels as label}
 		<line
-			x1={PADDING}
+			x1={PADDINGX}
 			y1={label.y}
-			x2={WIDTH - PADDING}
+			x2={WIDTH - PADDINGX}
 			y2={label.y}
 			stroke="#eee"
 			stroke-dasharray="4 4"
 		/>
-		<text x={PADDING - 6} y={label.y + 4} text-anchor="end" font-size="12" fill="#555"
+		<text x={PADDINGX - 6} y={label.y + 4} text-anchor="end" font-size="12" fill="#555"
 			>{label.val}</text
 		>
 	{/each}
@@ -70,7 +71,7 @@
 	{#each time as t, index}
 		<text
 			x={xScale(index)}
-			y={HEIGHT - PADDING + 20}
+			y={HEIGHT - PADDINGY + 20}
 			text-anchor="middle"
 			font-size="12"
 			opacity={index % 3 == 0 ? 1 : 0}
@@ -82,13 +83,13 @@
 
 	<!-- Axis -->
 	<line
-		x1={PADDING}
-		y1={HEIGHT - PADDING}
-		x2={WIDTH - PADDING}
-		y2={HEIGHT - PADDING}
+		x1={PADDINGX}
+		y1={HEIGHT - PADDINGY}
+		x2={WIDTH - PADDINGX}
+		y2={HEIGHT - PADDINGY}
 		stroke="#333"
 	/>
-	<line x1={PADDING} y1={PADDING} x2={PADDING} y2={HEIGHT - PADDING} stroke="#333" />
+	<line x1={PADDINGX} y1={PADDINGY} x2={PADDINGX} y2={HEIGHT - PADDINGY} stroke="#333" />
 
 	<!-- CHART GROUP -->
 	<g class="slide-container">

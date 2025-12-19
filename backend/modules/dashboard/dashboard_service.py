@@ -11,7 +11,7 @@ def get_sensor_data(state: AppState, days: int = 3) -> list[SensorData]:
 		sensor_data = (
 			db.query(SensorData)
 			.filter(SensorData.timestamp >= n_days_ago)
-			.order_by(SensorData.timestamp.desc())
+			.order_by(SensorData.timestamp.asc())
 			.all()
 		)
 
